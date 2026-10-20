@@ -1,74 +1,128 @@
-# CloudGraph
+## CloudGraph v0.4: IAM-linked graph analysis
 
-**Cloud security attack-path analysis and remediation simulation**
+The **IAM-linked attack paths** panel loads `samples/linked-demo.json`, which annotates graph edges with `iam_action` and `iam_resource` and maps role node IDs to sample identity policies. Click **Load linked demo**, then **Analyze IAM-linked paths**. Check graph edges and click **Simulate checked edge removals** to compare modeled paths before/after.
 
-CloudGraph is a Python/FastAPI web application for exploring modeled cloud infrastructure, inspecting AWS-style IAM identity policies, identifying potential access paths, and comparing hypothetical remediation changes.
+New endpoints: `POST /api/linked/analyze` with `{"environment": {...}, "policies": {"role_node_id": {"Statement": [...]}}}`; `POST /api/linked/simulate` with the same payload plus `"disabled_edges": [0]`.
 
-> **Scope:** This is an educational, offline security-analysis prototype. It does **not** implement AWS's complete authorization semantics and should not be used as a production cloud-security audit tool.
+**Interpretation:** An unconditional matching identity-policy Allow is labeled *potential*, never proof of effective authorization. Matching explicit Deny and absence of matching Allow exclude an IAM-annotated edge from this limited model. Conditional/unsupported statements produce *unknown* and are excluded from modeled paths rather than incorrectly asserting access. Edges without IAM annotations retain the original synthetic reachability assumption. This is not AWS IAM evaluation: trust policies, resource policies, SCPs, permission boundaries, session policies, principal context, action-resource semantics and many other AWS controls are not modeled. Scores remain illustrative. Do not use findings as proof of exploitable access or the absence of risk.
+
+Run tests with `py -m pytest -q` (install `requirements.txt` first). This release adds six IAM-linkage tests.
+
+---
+
+# CloudGraph · Cloud Security Digital Twin
+
+An interactive **defensive security** prototype that analyzes synthetic AWS-style resource graphs, identifies modeled access paths to sensitive resources, and simulates remediation by disabling relationships. Designed as a portfolio project and educational demonstration.
+
+> **Scope:** This is not an AWS scanner or a validated exploitability assessment. It does not call AWS APIs, execute attack steps, or claim CVSS-compliant scores. All demo entities are fictional.
 
 ## Features
 
-- Interactive cloud resource and relationship graph
-- AWS-style IAM JSON policy inspector
-- Simplified IAM-linked potential attack-path analysis
-- Offline AWS-style inventory JSON importer
-- Explainable risk scoring
-- Simulated removal of risky graph connections
-- Exportable PDF assessment reports
-- Automated Python tests
+- FastAPI backend with input validation and JSON REST endpoints
+- Graph traversal with cycle avoidance, depth limit, and deterministic finding ordering
+- Exposure-path findings with illustrative severity scores
+- Interactive SVG graph and remediation toggles
+- Before/after path comparison without modifying original data
+- Upload your own JSON graph (up to 250 nodes / 2,000 edges)
+- Automated unit and API tests; Docker support; GitHub Actions CI
 
-## Run locally
+## Quick start
 
-Requires Python 3.
-
-```bash
-python -m pip install -r requirements.txt
-python -m uvicorn backend.main:app --reload
-```
-
-Open http://127.0.0.1:8000 in your browser.
-
-On Windows, use `py -m pip` and `py -m uvicorn` if the `python` command is unavailable.
-
-## Run tests
+Requires Python 3.10+.
 
 ```bash
-python -m pytest -q
+python -m venv .venv
+# macOS/Linux: source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn backend.main:app --reload
 ```
 
-## Demo
+Open **http://127.0.0.1:8000**. API docs: **http://127.0.0.1:8000/docs**.
 
-The `samples/` folder contains synthetic, non-sensitive example infrastructure and IAM policies. Use the dashboard's sample-load actions to explore the analyzer and remediation simulator.
+Run tests:
+
+```bash
+pytest -q
+```
+
+Or use Docker:
+
+```bash
+docker build -t cloudgraph .
+docker run --rm -p 8000:8000 cloudgraph
+```
+
+## Data model
+
+See [`samples/demo.json`](samples/demo.json). `nodes` have unique `id`, `kind`, optional `label`, `sensitive`, and `compromised`. `edges` have `source`, `target`, `permission`, and optional `enabled` (defaults to true). Supported permissions: `reachable`, `assume-role`, `read`, `write`, `admin`.
+
+The graph is intentionally simplified: an enabled directed edge is modeled as traversable, regardless of its permission label. **Real AWS effective access** depends on IAM policy evaluation, explicit denies, SCPs, resource policies, network paths, trust policies, conditions, and more. Future versions should implement those semantics before any real-world risk claim.
+
+## API
+
+- `GET /api/demo` — sample environment
+- `POST /api/analyze` — `{ "environment": { ... } }`
+- `POST /api/simulate` — `{ "environment": { ... }, "disabled_edges": [1, 5] }`
 
 ## Architecture
 
 ```text
-Browser UI (frontend/)
-      |
-      v
-FastAPI (backend/main.py)
-      |-- Infrastructure graph engine (engine.py)
-      |-- IAM policy inspector (iam.py)
-      |-- IAM-linked path model (linked.py)
-      |-- Inventory importer (importer.py)
-      |-- Risk scoring (scoring.py)
-      '-- PDF reporting (reports.py)
+Browser (HTML/CSS/JS + SVG graph)
+       │ JSON requests
+       ▼
+FastAPI (input validation)
+       │
+       ▼
+Graph engine (BFS-like path enumeration, severity model)
+       │
+       ▼
+Findings + simulation comparison
 ```
 
-## Security and accuracy limitations
+## Engineering limitations / roadmap
 
-CloudGraph uses a simplified offline resource and authorization model. Results describe **potential modeled paths**, not verified exploitability. AWS IAM decisions also depend on context, resource-based policies, permission boundaries, service control policies, trust relationships, conditions, and other rules that this prototype does not comprehensively model.
+1. Implement real IAM permission evaluation and policy-condition handling.
+2. Add offline import of sanitized AWS configuration exports (never require secrets).
+3. Add confidence and uncertainty explanations per finding.
+4. Add realistic test fixtures, benchmarks, and a security threat model.
+5. Add PostgreSQL persistence, authentication, audit trails, and report export.
+6. Improve visualization layout and add accessible keyboard navigation.
 
-Do not upload real credentials, secret values, or sensitive production configuration exports to public repositories.
+## Responsible use
 
-## Roadmap
+Only analyze environments you own or have permission to assess. Do not upload access keys, customer data, or confidential production configuration. The sample data is synthetic.
 
-- [ ] Support selected native AWS Config export schemas
-- [ ] Improve IAM condition and trust-policy modeling
-- [ ] Add more validation fixtures and false-positive measurements
-- [ ] Add screenshots and a short recorded demo
-- [ ] Expand remediation comparisons
+## Resume integrity
 
-## License
+Describe only features you have implemented, tested, and can explain. This prototype is a **foundation** for a more advanced cloud security project, not a production-ready cloud security product.
 
-No license has been selected yet. Add one if you intend to permit reuse.
+## v0.2 — Offline IAM identity-policy inspector
+
+The dashboard now includes an IAM policy inspector. Select **Load sample policy**, then **Inspect IAM policy** to see potential sensitive-permission indicators. You can paste your own identity-policy JSON (do not include credentials or confidential customer data). The sample includes a broad role-management Allow and an explicit Deny for secret reads.
+
+**Important limitations:** This is a *pattern-based educational inspection*, **not** a full AWS IAM evaluator. It does not calculate effective permissions, evaluate conditions, SCPs, permissions boundaries, session or resource-based policies, role trust, or AWS action/resource compatibility. Conditional statements are flagged for review and not counted as unconditional findings. An explicit Deny is considered only for straightforward matching action/resource patterns; wildcard resource relationships are not fully modeled. Findings do not establish exploitable paths. The IAM inspector is separate from the synthetic attack-path graph.
+
+API: `POST /api/iam/analyze` with `{ "policy": { ...AWS identity policy... } }`.
+
+Tests: `python -m pytest -q` (includes IAM parser regression tests).
+
+
+## v0.4 enhancements
+
+- Explainable risk score factors for the synthetic graph analysis (impact, exposure, hop adjustment). These are **not CVSS scores**.
+- PDF report export for the currently loaded environment, including selected simulated edge removals and optional IAM overlay. PDF is generated locally; no AWS credentials are required.
+- Updated dashboard styling and report panel.
+- Additional API and scoring tests.
+
+To export, run the app and click **Export security PDF**. The server also exposes `POST /api/report/pdf` with `environment`, optional `policies`, and optional `disabled_edges`.
+
+**Limitations:** no real AWS import, no comprehensive AWS effective-permissions evaluation, no production remediation, no exploit verification. Do not upload sensitive configurations to an untrusted deployment.
+
+## v0.5: Offline AWS inventory import
+
+Use **AWS inventory importer** on the dashboard, click **Load example inventory**, then **Import and map**. The existing IAM-linked analysis button can then analyze the imported graph. You can also select **Choose AWS inventory JSON** to import a locally saved JSON file. No AWS account, API keys, or network access to AWS are required.
+
+The input is a **CloudGraph-defined export format**, not native AWS Config, Terraform, CloudFormation, or a complete AWS account export. See `samples/aws-inventory.json` for the supported schema (`format: cloudgraph-aws-inventory-v1`). Top-level lists: `roles` (name, inline `policy`), `instances` (id, role, public_ip, ingress CIDR/port), `buckets`, `databases`, and `secrets` (name, arn, sensitive). The current importer supports only public HTTP(S) ingress for IPv4/IPv6 CIDRs, selected read actions, and unconditional identity policy matching. It does **not** evaluate VPC routes, network ACLs, trust policies, SCPs, permission boundaries, resource policies, or effective AWS authorization. Role-to-resource edges and graph findings are **hypotheses** and must not be presented as proof of exploitability. Import only sanitized exports; do not upload credentials or sensitive secrets.
+
+Test: `py -m pytest -q` (Windows) or `python -m pytest -q`.
