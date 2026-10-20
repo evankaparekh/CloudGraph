@@ -1,0 +1,9 @@
+{
+  "format": "cloudgraph-aws-inventory-v1",
+  "name": "Example fictional AWS inventory",
+  "roles": [{"name":"web-app-role","policy":{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:GetObject","secretsmanager:GetSecretValue"],"Resource":"*"}]}}],
+  "instances": [{"id":"i-demo-web","role":"web-app-role","public_ip":true,"ingress":[{"cidr":"0.0.0.0/0","port":443}]}],
+  "buckets": [{"name":"example-customer-exports","arn":"arn:aws:s3:::example-customer-exports/*","sensitive":true,"public":false}],
+  "databases": [{"name":"example-db","arn":"arn:aws:rds-db:us-east-1:111122223333:dbuser:db-123/app","sensitive":true}],
+  "secrets": [{"name":"example-api-secret","arn":"arn:aws:secretsmanager:us-east-1:111122223333:secret:example-api-secret","sensitive":true}]
+}

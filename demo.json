@@ -1,0 +1,22 @@
+{
+  "name": "Fictional AcmeCloud staging environment",
+  "nodes": [
+    {"id":"internet","label":"Public Internet","kind":"internet"},
+    {"id":"web","label":"Public Web App","kind":"compute"},
+    {"id":"role","label":"WebApp IAM Role","kind":"role"},
+    {"id":"db","label":"Customer Database","kind":"database","sensitive":true},
+    {"id":"bucket","label":"Internal Reports Bucket","kind":"bucket","sensitive":true},
+    {"id":"analyst","label":"Analyst Identity","kind":"user","compromised":true},
+    {"id":"readonly","label":"ReadOnly Role","kind":"role"},
+    {"id":"secret","label":"Production API Secret","kind":"secret","sensitive":true}
+  ],
+  "edges": [
+    {"source":"internet","target":"web","permission":"reachable","enabled":true},
+    {"source":"web","target":"role","permission":"assume-role","enabled":true},
+    {"source":"role","target":"db","permission":"read","enabled":true},
+    {"source":"role","target":"bucket","permission":"read","enabled":true},
+    {"source":"analyst","target":"readonly","permission":"assume-role","enabled":true},
+    {"source":"readonly","target":"secret","permission":"read","enabled":true},
+    {"source":"role","target":"secret","permission":"read","enabled":true}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {"Sid": "BroadRoleManagement", "Effect": "Allow", "Action": ["iam:AttachRolePolicy", "iam:PassRole", "secretsmanager:GetSecretValue"], "Resource": "*"},
+    {"Sid": "ExplicitSecretDeny", "Effect": "Deny", "Action": "secretsmanager:GetSecretValue", "Resource": "*"}
+  ]
+}
