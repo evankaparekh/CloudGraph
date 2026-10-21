@@ -45,5 +45,3 @@ Do not commit credentials, secret values, or confidential production exports.
 - Expand fixtures, edge cases and evaluation metrics
 - Add screenshots and a demo recording
 
-## Development
-This is a portfolio learning project. Contributions and testing should be described accurately in resumes and interviews.
