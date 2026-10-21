@@ -2,7 +2,7 @@
 
 CloudGraph is an educational, offline cloud security analysis application. It visualizes synthetic AWS-style infrastructure, inspects IAM identity policies, models potential access paths, and simulates remediation.
 
-> **Important:** CloudGraph does not implement full AWS authorization semantics. Findings are illustrative potential paths, not verified exploitability or a production cloud audit.
+> **Important:** CloudGraph does not implement full AWS authorization semantics yet. Findings are illustrative potential paths, not verified exploitability or a production cloud audit.
 
 ## Features
 - Interactive infrastructure graph and path analysis
@@ -43,5 +43,4 @@ Do not commit credentials, secret values, or confidential production exports.
 - Support selected native AWS Config export schemas
 - Improve IAM condition and role-trust modeling
 - Expand fixtures, edge cases and evaluation metrics
-- Add screenshots and a demo recording
 
